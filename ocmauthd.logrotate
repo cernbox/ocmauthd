@@ -1,0 +1,19 @@
+/var/log/ocmauthd/ocmauthd_http.log {
+    daily
+    rotate 365
+    copytruncate
+    delaycompress
+    compress
+    notifempty
+    missingok
+}
+
+/var/log/ocmauthd/ocmauthd_app.log {
+    daily
+    rotate 365
+    copytruncate
+    delaycompress
+    compress
+    notifempty
+    missingok
+}
