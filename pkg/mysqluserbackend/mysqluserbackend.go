@@ -3,10 +3,10 @@ package mysqluserbackend
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"sync"
-	"strings"
 	"errors"
+	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/cernbox/ocmauthd/pkg"
 	_ "github.com/go-sql-driver/mysql"
@@ -61,7 +61,7 @@ func (ub *userBackend) Authenticate(ctx context.Context, share, token string) er
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(fmt.Sprintf("SELECT share FROM %s WHERE token=?", ub.table))
+	stmt, err := db.Prepare(fmt.Sprintf("SELECT file_target FROM %s WHERE token=?", ub.table))
 
 	if err != nil {
 		ub.logger.Error("CANNOT CREATE STATEMENT")

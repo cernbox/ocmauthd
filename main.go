@@ -26,7 +26,7 @@ func main() {
 	gc.Add("mysql-username", "root", "MySQL server username.")
 	gc.Add("mysql-password", "", "MySQL server password.")
 	gc.Add("mysql-db", "cbox", "DB name.")
-	gc.Add("mysql-table", "ocm_shares", "Table name.")
+	gc.Add("mysql-table", "oc_share", "Table name.")
 	gc.Add("safety-sleep", 5, "Seconds to pause requests on authentication failure.")
 	gc.Add("admin-secret", "bar", "secreto to access admin APIs for cache manipulation.")
 	gc.BindFlags()
@@ -49,7 +49,7 @@ func main() {
 	authHandler := handlers.BasicAuthOnly(logger, ub, gc.GetInt("safety-sleep"))
 
 	router.Handle("/api/v1/auth", authHandler)
-	
+
 	loggedRouter := gologger.GetLoggedHTTPHandler(gc.GetString("http-log"), router)
 
 	s := http.Server{
