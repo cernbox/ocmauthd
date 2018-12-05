@@ -31,7 +31,7 @@ func (sr UserBackendError) Error() string {
 }
 
 type UserBackend interface {
-	Authenticate(ctx context.Context, share, token string) error
+	Authenticate(ctx context.Context, share, token string) (string, string, error)
 	SetExpiration(ctx context.Context, expiration int64) error
 	ClearCache(ctx context.Context)
 }

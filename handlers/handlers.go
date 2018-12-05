@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"net/http"
-	"strings"
+	"path"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/cernbox/ocmauthd/pkg"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
-
 
 func BasicAuthOnly(logger *zap.Logger, userBackend pkg.UserBackend, sleepPause int) http.Handler {
 	validBasicAuthsCounter := prometheus.NewCounter(prometheus.CounterOpts{
@@ -27,43 +28,43 @@ func BasicAuthOnly(logger *zap.Logger, userBackend pkg.UserBackend, sleepPause i
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		path := r.Header.Get("auth-path")
-		token := r.Header.Get("auth-token")
+		token, _, ok := r.BasicAuth()
+		if !ok {
+			invalidBasicAuthsCounter.Inc()
+			logger.Info("NO BASIC AUTH PROVIDED")
+			time.Sleep(time.Second * time.Duration(sleepPause))
+			w.Header().Set("WWW-Authenticate", "Basic Realm='ocmauthd credentials'")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 
-		if path == "" || token == "" {
+		auth_path := r.Header.Get("auth-path")
+
+		if auth_path == "" || token == "" {
 			invalidBasicAuthsCounter.Inc()
 			logger.Info("MISSING HEADERS")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		path = filepath.Clean(path)
+		auth_path = filepath.Clean(auth_path)
+		path_components := strings.Split(auth_path, "/")
 
-		err := userBackend.Authenticate(r.Context(), path, token)
+		user, eos_path, err := userBackend.Authenticate(r.Context(), path_components[0], token)
 		if err != nil {
 			invalidBasicAuthsCounter.Inc()
-			logger.Info("WRONG PATH OR TOKEN")
+			logger.Info("WRONG PATH OR TOKEN", zap.String("token", token), zap.String("auth_path", auth_path))
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		path_components := strings.Split(path, "/")
-		var user string
-
-		// Assuming EOS username is always a subdirectory of its 1st letter
-		// Otherwise we need to remove all possible EOS base paths
-		for i, elem := range path_components {
-			if len(elem) == 1 {
-				if i + 1 < len(path_components) {
-					user = path_components[i + 1]
-				}
-				break
-			}
-		}
+		path_components[0] = eos_path
+		full_path := path.Join(path_components...)
 
 		validBasicAuthsCounter.Inc()
-		logger.Info("AUTHENTICATION SUCCEEDED", zap.String("PATH", path))
+		logger.Info("AUTHENTICATION SUCCEEDED", zap.String("PATH", full_path), zap.String("user", user))
 		w.Header().Set("user", user)
+		w.Header().Set("full_path", full_path)
 		w.WriteHeader(http.StatusOK)
 	})
 }
