@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -46,6 +47,15 @@ func BasicAuthOnly(logger *zap.Logger, userBackend pkg.UserBackend, sleepPause i
 		}
 
 		authPath = filepath.Clean(authPath)
+		authPath, err := url.PathUnescape(authPath)
+
+		if err != nil {
+			invalidBasicAuthsCounter.Inc()
+			logger.Info("ERROR PARSING THE PATH")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		pathComponents := strings.FieldsFunc(authPath, func(c rune) bool { return c == '/' })
 
 		user, eosPath, err := userBackend.Authenticate(r.Context(), pathComponents[0], token)
