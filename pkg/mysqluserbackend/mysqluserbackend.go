@@ -63,8 +63,8 @@ func (ub *userBackend) Authenticate(ctx context.Context, share, token string) (s
 	var user string
 	var eos_path string
 
-	query := fmt.Sprintf("SELECT uid_owner, ocm_eos_base_path FROM %s WHERE token=? and file_target=?", ub.table)
-	err = db.QueryRow(query, token, "/"+share).Scan(&user, &eos_path)
+	query := fmt.Sprintf("SELECT uid_owner, ocm_eos_base_path FROM %s WHERE token=?", ub.table)
+	err = db.QueryRow(query, token).Scan(&user, &eos_path)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", "", errors.New("Invalid path provided")
