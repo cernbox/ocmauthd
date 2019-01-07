@@ -51,7 +51,7 @@ type userBackend struct {
 
 // TODO implement caching
 
-func (ub *userBackend) Authenticate(ctx context.Context, share, token string) (string, string, error) {
+func (ub *userBackend) Authenticate(ctx context.Context, token string) (string, string, error) {
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", ub.username, ub.password, ub.hostname, ub.port, ub.db))
 	if err != nil {

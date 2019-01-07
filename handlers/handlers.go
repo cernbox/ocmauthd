@@ -2,9 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"net/url"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/cernbox/ocmauthd/pkg"
@@ -37,31 +34,17 @@ func BasicAuthOnly(logger *zap.Logger, userBackend pkg.UserBackend, sleepPause i
 			return
 		}
 
-		authPath := r.Header.Get("auth-path")
-
-		if authPath == "" || token == "" {
+		if token == "" {
 			invalidBasicAuthsCounter.Inc()
 			logger.Info("MISSING HEADERS")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		authPath = filepath.Clean(authPath)
-		authPath, err := url.PathUnescape(authPath)
-
+		user, eosPath, err := userBackend.Authenticate(r.Context(), token)
 		if err != nil {
 			invalidBasicAuthsCounter.Inc()
-			logger.Info("ERROR PARSING THE PATH")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		pathComponents := strings.FieldsFunc(authPath, func(c rune) bool { return c == '/' })
-
-		user, eosPath, err := userBackend.Authenticate(r.Context(), pathComponents[0], token)
-		if err != nil {
-			invalidBasicAuthsCounter.Inc()
-			logger.Info("WRONG PATH OR TOKEN", zap.String("token", token), zap.String("auth_path", authPath))
+			logger.Info("WRONG PATH OR TOKEN", zap.String("token", token))
 			time.Sleep(time.Second * time.Duration(sleepPause))
 			w.WriteHeader(http.StatusUnauthorized)
 			return
